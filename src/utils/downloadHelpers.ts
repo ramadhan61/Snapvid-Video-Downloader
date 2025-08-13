@@ -1,3 +1,4 @@
+// DownloadHelper.ts
 import { detectDevice, getOptimalDownloadMethod } from './deviceDetection';
 
 export interface DownloadOptions {
@@ -7,8 +8,8 @@ export interface DownloadOptions {
   platform: string;
 }
 
-export const universalDownload = async (options: DownloadOptions): Promise<boolean> => {
-  const { url, filename, type, platform } = options;
+export const DownloadHelper = async (options: DownloadOptions): Promise<boolean> => {
+  const { url, filename } = options;
   const method = getOptimalDownloadMethod();
 
   try {
@@ -42,35 +43,26 @@ const downloadForIOSSafari = async (url: string, filename: string): Promise<bool
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
-    link.target = '_blank'; // Penting: agar muncul prompt Save As
+    link.target = '_blank';
     link.style.display = 'none';
     document.body.appendChild(link);
 
-    // Klik langsung dari user gesture
     link.click();
 
-    // Dispatch tambahan untuk kompatibilitas
-    const clickEvent = new MouseEvent('click', {
-      view: window,
-      bubbles: true,
-      cancelable: true,
-      buttons: 1,
-    });
+    const clickEvent = new MouseEvent('click', { view: window, bubbles: true, cancelable: true, buttons: 1 });
     link.dispatchEvent(clickEvent);
 
     document.body.removeChild(link);
-
     showIOSSuccessNotification(filename);
 
     return true;
   } catch (error) {
     console.error('iOS download failed:', error);
-    window.open(url, '_blank'); // fallback manual
+    window.open(url, '_blank');
     return false;
   }
 };
 
-// iOS success notification
 const showIOSSuccessNotification = (filename: string) => {
   const toast = document.createElement('div');
   toast.innerHTML = `
@@ -78,9 +70,8 @@ const showIOSSuccessNotification = (filename: string) => {
       <div style="font-weight: bold; margin-bottom: 8px;">✅ iOS Download</div>
       <div style="font-size: 14px; line-height: 1.4;">
         <strong>${filename}</strong><br>
-        • Download started automatically<br>
-        • Check Downloads folder<br>
-        • Or Files app → Downloads
+        • Download started (tap-hold if not auto-save)<br>
+        • Check Downloads folder or Files app → Downloads
       </div>
     </div>
   `;
@@ -99,9 +90,7 @@ const showIOSSuccessNotification = (filename: string) => {
     font-size: 13px;
   `;
   document.body.appendChild(toast);
-  setTimeout(() => {
-    if (document.body.contains(toast)) document.body.removeChild(toast);
-  }, 5000);
+  setTimeout(() => { if (document.body.contains(toast)) document.body.removeChild(toast); }, 5000);
 };
 
 /** ===================== Android Chrome ===================== **/
@@ -126,8 +115,7 @@ const downloadForAndroidChrome = async (url: string, filename: string): Promise<
     }
 
     throw new Error('Fetch failed');
-  } catch (error) {
-    // fallback direct link
+  } catch {
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
@@ -145,7 +133,7 @@ const downloadForDesktopSafari = async (url: string, filename: string): Promise<
   try {
     const link = document.createElement('a');
     link.href = url;
-    link.download = filename; // Tambahkan agar langsung save
+    link.download = filename;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.style.display = 'none';
@@ -153,7 +141,7 @@ const downloadForDesktopSafari = async (url: string, filename: string): Promise<
     link.click();
     document.body.removeChild(link);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -188,7 +176,7 @@ const downloadForDesktopModern = async (url: string, filename: string): Promise<
     }
 
     throw new Error('Fetch failed');
-  } catch (error) {
+  } catch {
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
@@ -207,8 +195,8 @@ const downloadFallback = async (url: string, filename: string): Promise<boolean>
   try {
     window.open(url, '_blank');
     return true;
-  } catch (error) {
-    console.error('All download methods failed:', error);
+  } catch {
+    console.error('All download methods failed');
     return false;
   }
 };
@@ -220,10 +208,5 @@ export const createSafeFilename = (title: string, platform: string, quality: str
 };
 
 export const validateDownloadUrl = (url: string): boolean => {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
+  try { new URL(url); return true; } catch { return false; }
 };
