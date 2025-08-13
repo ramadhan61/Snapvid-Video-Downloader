@@ -1,196 +1,148 @@
 // DownloadHelper.ts
-import { detectDevice, getOptimalDownloadMethod } from './deviceDetection';
-
 export interface DownloadOptions {
   url: string;
   filename: string;
-  type: 'video' | 'audio';
-  platform: string;
 }
 
 export const DownloadHelper = async (options: DownloadOptions): Promise<boolean> => {
   const { url, filename } = options;
-  const method = getOptimalDownloadMethod();
+  
+  // Deteksi platform
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
   try {
-    // First try the most direct method that works across platforms
-    return await forceDirectDownload(url, filename);
-  } catch (error) {
-    console.error('Direct download failed, trying platform-specific method:', error);
-    try {
-      switch (method) {
-        case 'ios-safari':
-          return await downloadForIOSSafari(url, filename);
-        case 'android-chrome':
-          return await downloadForAndroidChrome(url, filename);
-        case 'desktop-safari':
-          return await downloadForDesktopSafari(url, filename);
-        default:
-          return await downloadForDesktopModern(url, filename);
-      }
-    } catch (fallbackError) {
-      console.error('Platform-specific download failed:', fallbackError);
-      return await downloadFallback(url, filename);
+    // Utamakan metode fetch + blob untuk semua platform modern
+    if (!isIOS && !isSafari) {
+      return await fetchAndDownload(url, filename);
     }
+
+    // Fallback untuk iOS dan Safari
+    if (isIOS || isSafari) {
+      return await iosSafariDownload(url, filename);
+    }
+
+    // Fallback untuk Android
+    if (isAndroid) {
+      return await androidDownload(url, filename);
+    }
+
+    // Fallback terakhir
+    return await basicDownload(url, filename);
+  } catch (error) {
+    console.error('Download failed:', error);
+    return await basicDownload(url, filename);
   }
 };
 
-/** ===================== Universal Direct Download ===================== **/
-const forceDirectDownload = async (url: string, filename: string): Promise<boolean> => {
-  return new Promise((resolve, reject) => {
-    try {
-      // First try fetch + blob method (works on most modern browsers)
-      fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        credentials: 'include',
-        headers: new Headers({ 'Content-Type': 'application/octet-stream' })
-      })
-      .then(response => {
-        if (!response.ok) throw new Error('Network response was not ok');
-        return response.blob();
-      })
-      .then(blob => {
-        const blobUrl = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = blobUrl;
-        a.download = filename;
-        
-        // Append to body (required for Firefox)
-        document.body.appendChild(a);
-        
-        // Programmatically click the link
-        a.click();
-        
-        // Cleanup
-        setTimeout(() => {
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(blobUrl);
-        }, 100);
-        
-        resolve(true);
-      })
-      .catch(error => {
-        console.error('Fetch blob method failed:', error);
-        reject(error);
-      });
-    } catch (error) {
-      reject(error);
-    }
-  });
+/** ===================== METODE UTAMA ===================== **/
+const fetchAndDownload = async (url: string, filename: string): Promise<boolean> => {
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/octet-stream' }
+    });
+
+    if (!response.ok) throw new Error('Fetch failed');
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    }, 100);
+
+    return true;
+  } catch (error) {
+    console.error('Fetch download failed:', error);
+    throw error;
+  }
 };
 
-/** ===================== iOS Safari ===================== **/
-const downloadForIOSSafari = async (url: string, filename: string): Promise<boolean> => {
-  return new Promise((resolve) => {
-    try {
-      // iOS requires a more complex approach
+/** ===================== METODE FALLBACK ===================== **/
+const iosSafariDownload = async (url: string, filename: string): Promise<boolean> => {
+  try {
+    // Metode 1: Membuka di tab baru (user harus manual tap-hold)
+    const newWindow = window.open(url, '_blank');
+    
+    // Metode 2: Iframe sebagai fallback
+    setTimeout(() => {
       const iframe = document.createElement('iframe');
       iframe.src = url;
       iframe.style.display = 'none';
-      iframe.sandbox = 'allow-scripts allow-same-origin allow-downloads';
-      
-      iframe.onload = () => {
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-          showIOSSuccessNotification(filename);
-          resolve(true);
-        }, 1000);
-      };
-      
       document.body.appendChild(iframe);
-    } catch (error) {
-      console.error('iOS iframe method failed:', error);
-      window.open(url, '_blank');
-      resolve(false);
-    }
-  });
-};
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    }, 200);
 
-/** ===================== Android Chrome ===================== **/
-const downloadForAndroidChrome = async (url: string, filename: string): Promise<boolean> => {
-  try {
-    // Create a hidden form and submit it
-    const form = document.createElement('form');
-    form.method = 'GET';
-    form.action = url;
-    form.target = '_blank';
-    form.style.display = 'none';
-    
-    document.body.appendChild(form);
-    form.submit();
-    
-    setTimeout(() => {
-      document.body.removeChild(form);
-    }, 1000);
-    
+    showIOSInstructions(filename);
     return true;
   } catch (error) {
-    console.error('Android form method failed:', error);
+    console.error('iOS download failed:', error);
+    throw error;
+  }
+};
+
+const androidDownload = async (url: string, filename: string): Promise<boolean> => {
+  try {
+    // Coba metode fetch dulu
+    try {
+      return await fetchAndDownload(url, filename);
+    } catch {
+      // Fallback ke metode form submit
+      const form = document.createElement('form');
+      form.method = 'GET';
+      form.action = url;
+      form.target = '_blank';
+      form.style.display = 'none';
+      document.body.appendChild(form);
+      form.submit();
+      setTimeout(() => document.body.removeChild(form), 1000);
+      return true;
+    }
+  } catch (error) {
+    console.error('Android download failed:', error);
+    throw error;
+  }
+};
+
+const basicDownload = async (url: string, filename: string): Promise<boolean> => {
+  try {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.target = '_blank';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => document.body.removeChild(a), 100);
+    return true;
+  } catch (error) {
+    console.error('Basic download failed:', error);
     window.open(url, '_blank');
     return false;
   }
 };
 
-/** ===================== Desktop Safari ===================== **/
-const downloadForDesktopSafari = async (url: string, filename: string): Promise<boolean> => {
-  try {
-    // Safari sometimes needs this approach
-    window.location.href = url;
-    return true;
-  } catch (error) {
-    console.error('Desktop Safari method failed:', error);
-    return false;
-  }
-};
-
-/** ===================== Desktop Modern ===================== **/
-const downloadForDesktopModern = async (url: string, filename: string): Promise<boolean> => {
-  try {
-    // Try using the HTML5 download attribute
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-    }, 100);
-    return true;
-  } catch (error) {
-    console.error('Modern desktop method failed:', error);
-    return false;
-  }
-};
-
-/** ===================== Fallback ===================== **/
-const downloadFallback = async (url: string, filename: string): Promise<boolean> => {
-  try {
-    // Final fallback - open in new tab
-    const newWindow = window.open(url, '_blank');
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-      // Popup blocked, redirect current page
-      window.location.href = url;
-    }
-    return true;
-  } catch (error) {
-    console.error('All download methods failed:', error);
-    return false;
-  }
-};
-
-/** ===================== iOS Notification ===================== **/
-const showIOSSuccessNotification = (filename: string) => {
+/** ===================== UTILITAS ===================== **/
+const showIOSInstructions = (filename: string) => {
   const toast = document.createElement('div');
   toast.innerHTML = `
-    <div style="text-align: center;">
-      <div style="font-weight: bold; margin-bottom: 8px;">📥 Download Started</div>
-      <div style="font-size: 14px; line-height: 1.4;">
-        Tap <strong>Share</strong> → <strong>Save to Files</strong><br>
-        Save as: <strong>${filename}</strong>
-      </div>
+    <div style="text-align: center; padding: 10px;">
+      <strong>Download ${filename}</strong><br>
+      Tap <strong>Share</strong> icon → <strong>Save to Files</strong>
     </div>
   `;
   toast.style.cssText = `
@@ -200,33 +152,17 @@ const showIOSSuccessNotification = (filename: string) => {
     transform: translateX(-50%);
     background: #007AFF;
     color: white;
-    padding: 16px 20px;
-    border-radius: 12px;
+    padding: 10px 15px;
+    border-radius: 10px;
     z-index: 10000;
-    font-weight: 500;
-    box-shadow: 0 4px 20px rgba(0,122,255,0.3);
-    max-width: 300px;
-    font-size: 13px;
+    font-size: 14px;
+    max-width: 80%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
   `;
   document.body.appendChild(toast);
-  setTimeout(() => {
-    if (document.body.contains(toast)) {
-      document.body.removeChild(toast);
-    }
-  }, 5000);
+  setTimeout(() => toast.remove(), 5000);
 };
 
-/** ===================== Utility ===================== **/
-export const createSafeFilename = (title: string, platform: string, quality: string, extension: string): string => {
-  const cleanTitle = title.replace(/[^a-zA-Z0-9\s\-_]/g, '').replace(/\s+/g, '_').substring(0, 50);
-  return `${cleanTitle}_${platform}_${quality}.${extension}`;
-};
-
-export const validateDownloadUrl = (url: string): boolean => {
-  try { 
-    new URL(url); 
-    return true; 
-  } catch { 
-    return false; 
-  }
+export const createSafeFilename = (name: string, ext: string): string => {
+  return `${name.replace(/[^a-zA-Z0-9\-_]/g, '').substring(0, 50)}.${ext}`;
 };
