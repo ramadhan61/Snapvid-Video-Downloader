@@ -40,24 +40,40 @@ export const DownloadHelper = async (options: DownloadOptions): Promise<boolean>
 /** ===================== iOS Safari ===================== **/
 const downloadForIOSSafari = async (url: string, filename: string): Promise<boolean> => {
   try {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.target = '_blank';
-    link.style.display = 'none';
-    document.body.appendChild(link);
-
-    link.click();
-
-    const clickEvent = new MouseEvent('click', { view: window, bubbles: true, cancelable: true, buttons: 1 });
-    link.dispatchEvent(clickEvent);
-
-    document.body.removeChild(link);
+    // First try the standard download method
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.target = '_blank';
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    
+    // Create and dispatch click event
+    const clickEvent = new MouseEvent('click', {
+      view: window,
+      bubbles: true,
+      cancelable: true
+    });
+    anchor.dispatchEvent(clickEvent);
+    
+    // For iOS 13+ we need to use this approach
+    setTimeout(() => {
+      const iframe = document.createElement('iframe');
+      iframe.src = url;
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1000);
+    }, 200);
+    
+    document.body.removeChild(anchor);
     showIOSSuccessNotification(filename);
-
     return true;
   } catch (error) {
     console.error('iOS download failed:', error);
+    // Fallback to opening in new tab
     window.open(url, '_blank');
     return false;
   }
@@ -67,11 +83,11 @@ const showIOSSuccessNotification = (filename: string) => {
   const toast = document.createElement('div');
   toast.innerHTML = `
     <div style="text-align: left;">
-      <div style="font-weight: bold; margin-bottom: 8px;">✅ iOS Download</div>
+      <div style="font-weight: bold; margin-bottom: 8px;">✅ Download Started</div>
       <div style="font-size: 14px; line-height: 1.4;">
         <strong>${filename}</strong><br>
-        • Download started (tap-hold if not auto-save)<br>
-        • Check Downloads folder or Files app → Downloads
+        • Tap and hold the preview to save<br>
+        • Check Files app → Downloads folder
       </div>
     </div>
   `;
@@ -96,7 +112,12 @@ const showIOSSuccessNotification = (filename: string) => {
 /** ===================== Android Chrome ===================== **/
 const downloadForAndroidChrome = async (url: string, filename: string): Promise<boolean> => {
   try {
-    const response = await fetch(url, { method: 'GET', headers: { 'Accept': '*/*', 'User-Agent': navigator.userAgent } });
+    // First try the fetch + blob method
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Accept': '*/*' },
+      credentials: 'include'
+    });
 
     if (response.ok) {
       const blob = await response.blob();
@@ -107,23 +128,42 @@ const downloadForAndroidChrome = async (url: string, filename: string): Promise<
       link.download = filename;
       link.style.display = 'none';
       document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
+      
+      // Force click for Android
+      const clickEvent = new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      });
+      link.dispatchEvent(clickEvent);
+      
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+      }, 1000);
       return true;
     }
 
     throw new Error('Fetch failed');
   } catch {
+    // Fallback to simple anchor click
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
     link.target = '_blank';
     link.style.display = 'none';
     document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    
+    const clickEvent = new MouseEvent('click', {
+      view: window,
+      bubbles: true,
+      cancelable: true
+    });
+    link.dispatchEvent(clickEvent);
+    
+    setTimeout(() => {
+      document.body.removeChild(link);
+    }, 1000);
     return true;
   }
 };
@@ -131,6 +171,7 @@ const downloadForAndroidChrome = async (url: string, filename: string): Promise<
 /** ===================== Desktop Safari ===================== **/
 const downloadForDesktopSafari = async (url: string, filename: string): Promise<boolean> => {
   try {
+    // Safari has issues with blob downloads, so we use a direct link
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
@@ -138,8 +179,18 @@ const downloadForDesktopSafari = async (url: string, filename: string): Promise<
     link.rel = 'noopener noreferrer';
     link.style.display = 'none';
     document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    
+    // Force click for better reliability
+    const clickEvent = new MouseEvent('click', {
+      view: window,
+      bubbles: true,
+      cancelable: true
+    });
+    link.dispatchEvent(clickEvent);
+    
+    setTimeout(() => {
+      document.body.removeChild(link);
+    }, 1000);
     return true;
   } catch {
     return false;
@@ -149,15 +200,18 @@ const downloadForDesktopSafari = async (url: string, filename: string): Promise<
 /** ===================== Desktop Modern ===================== **/
 const downloadForDesktopModern = async (url: string, filename: string): Promise<boolean> => {
   try {
+    // For modern browsers, use fetch + blob approach
     const response = await fetch(url, {
       method: 'GET',
-      headers: { 'Accept': '*/*', 'User-Agent': navigator.userAgent, 'Referer': window.location.origin },
+      headers: { 'Accept': '*/*' },
+      credentials: 'include',
       mode: 'cors',
     });
 
     if (response.ok) {
       const blob = await response.blob();
 
+      // IE/Edge special case
       if (window.navigator && (window.navigator as any).msSaveOrOpenBlob) {
         (window.navigator as any).msSaveOrOpenBlob(blob, filename);
         return true;
@@ -169,14 +223,25 @@ const downloadForDesktopModern = async (url: string, filename: string): Promise<
       link.download = filename;
       link.style.display = 'none';
       document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
+      
+      // Force click for better reliability
+      const clickEvent = new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      });
+      link.dispatchEvent(clickEvent);
+      
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+      }, 1000);
       return true;
     }
 
     throw new Error('Fetch failed');
   } catch {
+    // Fallback to simple anchor click
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
@@ -184,8 +249,17 @@ const downloadForDesktopModern = async (url: string, filename: string): Promise<
     link.rel = 'noopener noreferrer';
     link.style.display = 'none';
     document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    
+    const clickEvent = new MouseEvent('click', {
+      view: window,
+      bubbles: true,
+      cancelable: true
+    });
+    link.dispatchEvent(clickEvent);
+    
+    setTimeout(() => {
+      document.body.removeChild(link);
+    }, 1000);
     return true;
   }
 };
@@ -193,6 +267,7 @@ const downloadForDesktopModern = async (url: string, filename: string): Promise<
 /** ===================== Fallback ===================== **/
 const downloadFallback = async (url: string, filename: string): Promise<boolean> => {
   try {
+    // Final fallback - just open in new tab
     window.open(url, '_blank');
     return true;
   } catch {
@@ -208,5 +283,10 @@ export const createSafeFilename = (title: string, platform: string, quality: str
 };
 
 export const validateDownloadUrl = (url: string): boolean => {
-  try { new URL(url); return true; } catch { return false; }
+  try { 
+    new URL(url); 
+    return true; 
+  } catch { 
+    return false; 
+  }
 };
