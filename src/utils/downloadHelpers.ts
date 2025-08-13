@@ -10,23 +10,23 @@ export interface DownloadOptions {
 export const universalDownload = async (options: DownloadOptions): Promise<boolean> => {
   const { url, filename, type, platform } = options;
   const method = getOptimalDownloadMethod();
-  
+
   try {
     switch (method) {
       case 'ios-safari':
         return await downloadForIOSSafari(url, filename);
-      
+
       case 'android-chrome':
         return await downloadForAndroidChrome(url, filename);
-      
+
       case 'desktop-safari':
         return await downloadForDesktopSafari(url, filename);
-      
+
       case 'desktop-chrome':
       case 'desktop-firefox':
       case 'desktop-edge':
         return await downloadForDesktopModern(url, filename);
-      
+
       default:
         return await downloadFallback(url, filename);
     }
@@ -36,46 +36,36 @@ export const universalDownload = async (options: DownloadOptions): Promise<boole
   }
 };
 
+/** ===================== iOS Safari ===================== **/
 const downloadForIOSSafari = async (url: string, filename: string): Promise<boolean> => {
   try {
-    // Direct iOS Safari download without new tab
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
-    // Remove target="_blank" to prevent new tab
+    link.target = '_blank'; // Penting: agar muncul prompt Save As
     link.style.display = 'none';
-    
     document.body.appendChild(link);
-    
-    // Multiple iOS download methods
-    try {
-      // Method 1: Direct click
-      link.click();
-    } catch (e) {
-      // Method 2: Event simulation
-      const clickEvent = new MouseEvent('click', {
-        view: window,
-        bubbles: true,
-        cancelable: true,
-        buttons: 1
-      });
-      link.dispatchEvent(clickEvent);
-    }
-    
-    // Method 3: Delayed click for iOS Safari
-    setTimeout(() => {
-      if (link.click) {
-        link.click();
-      }
-    }, 50);
-    
+
+    // Klik langsung dari user gesture
+    link.click();
+
+    // Dispatch tambahan untuk kompatibilitas
+    const clickEvent = new MouseEvent('click', {
+      view: window,
+      bubbles: true,
+      cancelable: true,
+      buttons: 1,
+    });
+    link.dispatchEvent(clickEvent);
+
     document.body.removeChild(link);
-    
-    // Show success notification
+
     showIOSSuccessNotification(filename);
-    
+
     return true;
   } catch (error) {
+    console.error('iOS download failed:', error);
+    window.open(url, '_blank'); // fallback manual
     return false;
   }
 };
@@ -110,136 +100,111 @@ const showIOSSuccessNotification = (filename: string) => {
   `;
   document.body.appendChild(toast);
   setTimeout(() => {
-    if (document.body.contains(toast)) {
-      document.body.removeChild(toast);
-    }
+    if (document.body.contains(toast)) document.body.removeChild(toast);
   }, 5000);
 };
 
+/** ===================== Android Chrome ===================== **/
 const downloadForAndroidChrome = async (url: string, filename: string): Promise<boolean> => {
   try {
-    // Try fetch first for Android Chrome
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': '*/*',
-        'User-Agent': navigator.userAgent,
-      },
-    });
-    
+    const response = await fetch(url, { method: 'GET', headers: { 'Accept': '*/*', 'User-Agent': navigator.userAgent } });
+
     if (response.ok) {
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
-      
+
       const link = document.createElement('a');
       link.href = downloadUrl;
       link.download = filename;
       link.style.display = 'none';
-      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Clean up
+
       setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
       return true;
     }
-    
+
     throw new Error('Fetch failed');
   } catch (error) {
-    // Fallback for Android
+    // fallback direct link
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
     link.target = '_blank';
     link.style.display = 'none';
-    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
     return true;
   }
 };
 
+/** ===================== Desktop Safari ===================== **/
 const downloadForDesktopSafari = async (url: string, filename: string): Promise<boolean> => {
   try {
-    // Safari desktop - direct link with target blank
     const link = document.createElement('a');
     link.href = url;
+    link.download = filename; // Tambahkan agar langsung save
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.style.display = 'none';
-    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
     return true;
   } catch (error) {
     return false;
   }
 };
 
+/** ===================== Desktop Modern ===================== **/
 const downloadForDesktopModern = async (url: string, filename: string): Promise<boolean> => {
   try {
-    // Modern desktop browsers - fetch and blob
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Accept': '*/*',
-        'User-Agent': navigator.userAgent,
-        'Referer': window.location.origin,
-      },
+      headers: { 'Accept': '*/*', 'User-Agent': navigator.userAgent, 'Referer': window.location.origin },
       mode: 'cors',
     });
-    
+
     if (response.ok) {
       const blob = await response.blob();
-      
-      // Check for IE/Edge legacy
+
       if (window.navigator && (window.navigator as any).msSaveOrOpenBlob) {
         (window.navigator as any).msSaveOrOpenBlob(blob, filename);
         return true;
       }
-      
-      // Modern browsers
+
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
       link.download = filename;
       link.style.display = 'none';
-      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Clean up
       setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
       return true;
     }
-    
+
     throw new Error('Fetch failed');
   } catch (error) {
-    // Fallback to direct link
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.style.display = 'none';
-    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
     return true;
   }
 };
 
+/** ===================== Fallback ===================== **/
 const downloadFallback = async (url: string, filename: string): Promise<boolean> => {
   try {
-    // Ultimate fallback - just open the URL
     window.open(url, '_blank');
     return true;
   } catch (error) {
@@ -248,13 +213,9 @@ const downloadFallback = async (url: string, filename: string): Promise<boolean>
   }
 };
 
+/** ===================== Utility ===================== **/
 export const createSafeFilename = (title: string, platform: string, quality: string, extension: string): string => {
-  // Remove special characters and limit length
-  const cleanTitle = title
-    .replace(/[^a-zA-Z0-9\s\-_]/g, '')
-    .replace(/\s+/g, '_')
-    .substring(0, 50);
-  
+  const cleanTitle = title.replace(/[^a-zA-Z0-9\s\-_]/g, '').replace(/\s+/g, '_').substring(0, 50);
   return `${cleanTitle}_${platform}_${quality}.${extension}`;
 };
 
