@@ -77,7 +77,7 @@ Simply upload the contents of the `dist/` folder and build it.
 We're open to contributions!
 Please fork, create a new branch, and submit a pull request.
 
-If you find a bug or want to propose a new feature, please create an issue (https://github.com/username/snapvid/issues).
+If you find a bug or want to propose a new feature, please create an issue (https://github.com/ramadhan61/Snapvid-Video-Downloader/issues).
 
 ---
 
