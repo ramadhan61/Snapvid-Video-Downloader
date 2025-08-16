@@ -41,7 +41,7 @@ const XPage = () => {
       const response = await fetch(`https://api.paxsenix.biz.id/dl/aio?url=${encodeURIComponent(processedUrl)}`, {
         method: 'GET',
         headers: {
-          'Authorization': 'Bearer sk-paxsenix-XzTVDzit2ZRHhOLkBuRJBU0OnYzMI6M5WXc2Zwnlzbb8LSOj',
+          'Authorization': 'Bearer sk-paxsenix-cdiIbHKw5k-JQ70SC0IOaQNwsn8wk8hjU03Bi8M0DTw1NlqR',
           'Content-Type': 'application/json'
         }
       });
