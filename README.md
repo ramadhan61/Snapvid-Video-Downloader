@@ -66,8 +66,6 @@ Cukup upload isi folder `dist/` hasil build.
 
 ## 📄 Optimisasi SEO
 
-- ✅ `sitemap.xml` tersedia di root
-- ✅ `robots.txt` untuk indexing
 - ✅ Meta tags lengkap (`og:title`, `twitter:card`, dll.)
 - ✅ Favicon custom (ICO dan SVG)
 - ✅ Load cepat dan responsif
