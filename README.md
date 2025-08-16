@@ -84,7 +84,7 @@ Jika kamu menemukan bug atau ingin mengusulkan fitur baru, silakan buat [issue](
 ## 📜 Lisensi
 
 Proyek ini dilisensikan dengan lisensi MIT.  
-Hak cipta © 2025 Snapvid.
+Hak cipta © 2025 Radev.
 
 ---
 
@@ -95,4 +95,4 @@ Hak cipta © 2025 Snapvid.
 
 ---
 
-> Made with ❤️ by Snapvid Team
+> Made with ❤️ by Radev Team
