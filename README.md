@@ -2,7 +2,7 @@
 
 **Snapvid** adalah aplikasi web gratis untuk mengunduh video dari berbagai platform media sosial seperti Instagram, Facebook, Twitter/X, dan TikTok. Dibangun dengan React dan TypeScript.
 
-![Preview](https://snapvid.sbs/)<!-- Ganti dengan preview asli jika ada -->
+[Preview](https://snapvidai.vercel.app/)<!-- Ganti dengan preview asli jika ada -->
 
 ---
 
