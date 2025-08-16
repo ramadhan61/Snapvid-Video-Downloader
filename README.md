@@ -34,7 +34,7 @@ Snapvid menggunakan layanan API dari [Paxsenix Video Downloader API](https://api
 Clone proyek dan jalankan secara lokal:
 
 ```bash
-git clone https://github.com/ramadhan61/snapvid.git
+git clone https://github.com/ramadhan61/snapvid-video-downloader.git
 cd snapvid
 npm install
 npm run dev
