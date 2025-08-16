@@ -94,7 +94,7 @@ Hak cipta © 2025 Snapvid.
 ## 📬 Kontak
 
 **Website**: [https://snapvid.sbs](https://snapvid.sbs)  
-**Email**: [snapvid@email.com](mailto:snapvid@email.com)
+**Email**: [snapvid@email.com](mailto:companyradev@gmail.com)
 
 ---
 
