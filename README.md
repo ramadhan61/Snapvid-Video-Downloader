@@ -22,7 +22,6 @@
 - Vite
 - Tailwind CSS
 - Lucide Icons
-- Custom SEO (meta tags, sitemap, robots.txt)
 
 ---
 ## 🔌 API
