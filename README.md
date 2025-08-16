@@ -1,38 +1,38 @@
-# Snapvid
+#Snapvid
 
-**Snapvid** adalah aplikasi web gratis untuk mengunduh video dari berbagai platform media sosial seperti Instagram, Facebook, Twitter/X, dan TikTok. Dibangun dengan React dan TypeScript.
+Snapvid is a free web application for downloading videos from various social media platforms like Instagram, Facebook, Twitter/X, and TikTok. Built with React and TypeScript.
 
-[Preview](https://snapvidai.vercel.app/)<!-- Ganti dengan preview asli jika ada -->
-
----
-
-## ✨ Fitur
-
-- 🚀 Unduh video dari Instagram, TikTok, Facebook, dan Twitter/X
-- 💾 Pilihan format video/audio
-- 🔍 Tanpa login, tanpa watermark
-- ⚡ Cepat, ringan, responsif (mobile friendly)
-- 🔒 Aman tanpa menyimpan data pengguna
+[Preview](https://snapvidai.vercel.app/)<!-- Replace with original preview if available -->
 
 ---
 
-## 🔧 Teknologi
+## ✨ Features
 
-- React + TypeScript
-- Vite
-- Tailwind CSS
-- Lucide Icons
+- 🚀 Download videos from Instagram, TikTok, Facebook, and Twitter/X
+- 💾 Select video/audio format
+- 🔍 No login, no watermark
+- ⚡ Fast, lightweight, responsive (mobile friendly)
+- 🔒 Secure without storing user data
 
 ---
-## 🔌 API
 
-Snapvid menggunakan layanan API dari [Paxsenix Video Downloader API](https://api.paxsenix.biz.id/docs) untuk mengambil video dari berbagai platform sosial media.
+## 🔧 Technology
 
-## 📦 Instalasi
+- React + Typescript
+- Vit
+- CSS puller
+- Lucida Icons
 
-Clone proyek dan jalankan secara lokal:
+---
+## 🔌API
 
-```bash
+Snapvid uses the API service from [Paxsenix Video Downloader API](https://api.paxsenix.biz.id/docs) to fetch videos from various social media platforms.
+
+## 📦 Installation
+
+Clone the project and run it locally:
+
+``` bash
 git clone https://github.com/ramadhan61/snapvid-video-downloader.git
 cd snapvid
 npm install
@@ -41,58 +41,58 @@ npm run dev
 
 ---
 
-## 🛠️ Build untuk Produksi
+## 🛠️ Building for Production
 
-```bash
+``` bash
 npm run build
 ```
 
-Hasil build akan muncul di folder `dist/`.
+The build results will appear in the `dist/` folder.
 
 ---
 
 ## 🌐 Deployment
 
-Proyek ini dapat dengan mudah di-deploy ke berbagai platform statis seperti:
+This project can be easily deployed to various statistical platforms such as:
 
-- **Netlify**
+- **Netify**
 - **Vercel**
 - **Cloudflare Pages**
 - **GitHub Pages**
 
-Cukup upload isi folder `dist/` hasil build.
+Simply upload the contents of the `dist/` folder and build it.
 
 ---
 
-## 📄 Optimisasi SEO
+## 📄 SEO Optimization
 
-- ✅ Meta tags lengkap (`og:title`, `twitter:card`, dll.)
-- ✅ Favicon custom (ICO dan SVG)
-- ✅ Load cepat dan responsif
-
----
-
-## 🧑‍💻 Kontribusi
-
-Kami terbuka untuk kontribusi!  
-Silakan lakukan fork, buat branch baru, dan kirim pull request.
-
-Jika kamu menemukan bug atau ingin mengusulkan fitur baru, silakan buat [issue](https://github.com/username/snapvid/issues).
+- ✅ Full meta tags (`og:title`, `twitter:card`, etc.)
+- ✅ Custom Favicon (ICO and SVG)
+- ✅ Fast and responsive loading
 
 ---
 
-## 📜 Lisensi
+## 🧑‍💻 Contributions
 
-Proyek ini dilisensikan dengan lisensi MIT.  
-Hak cipta © 2025 Radev.
+We're open to contributions!
+Please fork, create a new branch, and submit a pull request.
 
----
-
-## 📬 Kontak
-
-**Website**: [https://snapvid.sbs](https://snapvid.sbs)  
-**Email**: [snapvid@email.com](mailto:companyradev@gmail.com)
+If you find a bug or want to propose a new feature, please create an issue (https://github.com/username/snapvid/issues).
 
 ---
 
-> Made with ❤️ by Radev Team
+## 📜 License
+
+This project is licensed under the MIT license.
+Copyright © 2025 Radev.
+
+---
+
+## 📬 Contact
+
+Website: [snapvid](https://snapvid.sbs)
+Email: [snapvid@email.com](mailto:companyradev@gmail.com)
+
+---
+
+> Made with ❤️ by the Radev Team
